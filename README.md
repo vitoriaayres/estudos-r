@@ -1,6 +1,6 @@
 # Estudos em R
 
-Dois estudos escritos em R base, sem bibliotecas de modelagem prontas.
+Quatro estudos escritos em R base, sem bibliotecas de modelagem prontas.
 
 ## 1. Inferência causal com os dados de LaLonde (`estudo_um.R`)
 
@@ -36,17 +36,39 @@ Uma rede neural totalmente conectada implementada só com álgebra de matrizes, 
 
 ![Evolução da fronteira de decisão durante o treino](rede_neural_evolucao.png)
 
+## 3. Teste A/B bayesiano (`estudo_tres.R`)
+
+Um teste A/B simulado com efeito conhecido (conversão de 4,0% contra 4,6%), analisado pelas abordagens clássica e bayesiana:
+
+- teste de duas proporções e p-valor;
+- modelo Beta-Binomial conjugado, probabilidade de B ser melhor e distribuição do lift por Monte Carlo;
+- perda esperada em forma fechada como regra de decisão, conferida contra a simulação;
+- 2.000 testes A/A e A/B simulados para medir quanto "espiar" o resultado todo dia inflaciona os falsos positivos;
+- sensibilidade à prior (uniforme, histórica e cética).
+
+## 4. Word embeddings do zero (`estudo_quatro.R`)
+
+Vetores de palavras construídos a partir dos seis romances de Jane Austen, sem rede neural:
+
+- matriz de coocorrência com janela de 5 palavras, ponderada pela distância;
+- PPMI com suavização de contexto e redução para 100 dimensões com SVD;
+- vizinhos semânticos (contagem bruta contra embeddings) e analogias do tipo he : she :: him : ?;
+- mapa semântico em 2D por PCA;
+- medição do viés de gênero que o modelo aprende do corpus.
+
 ## Como executar
 
-Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`:
+Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`, e o quarto, os do `janeaustenr`:
 
 ```r
-install.packages("causaldata")
+install.packages(c("causaldata", "janeaustenr"))
 ```
 
 ```bash
-Rscript estudo_um.R    # cerca de 1 minuto por causa do bootstrap
-Rscript estudo_dois.R  # cerca de 1 minuto
+Rscript estudo_um.R     # cerca de 1 minuto por causa do bootstrap
+Rscript estudo_dois.R   # cerca de 1 minuto
+Rscript estudo_tres.R   # menos de 1 minuto
+Rscript estudo_quatro.R # depende do SVD de uma matriz 3000 x 3000, de 1 a alguns minutos
 ```
 
 Cada script gera o seu gráfico principal em PNG na pasta atual.
