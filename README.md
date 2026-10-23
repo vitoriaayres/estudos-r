@@ -1,6 +1,6 @@
 # Estudos em R
 
-Quatro estudos escritos em R base, sem bibliotecas de modelagem prontas.
+Cinco estudos escritos em R base, sem bibliotecas de modelagem prontas.
 
 ## 1. Inferência causal com os dados de LaLonde (`estudo_um.R`)
 
@@ -56,6 +56,17 @@ Vetores de palavras construídos a partir dos seis romances de Jane Austen, sem 
 - mapa semântico em 2D por PCA;
 - medição do viés de gênero que o modelo aprende do corpus.
 
+## 5. Atenção do zero (`estudo_cinco.R`)
+
+O mecanismo de self-attention do Transformer implementado só com multiplicação de matrizes, treinado em duas tarefas escolhidas para tornar a atenção visível:
+
+- embeddings de dígitos e de posição, projeções Q, K e V e softmax escalado por √d;
+- retropropagação escrita à mão, verificada contra gradientes numéricos;
+- treino com Adam em lotes gerados a cada passo;
+- **inverter sequências:** a atenção aprende uma diagonal invertida, ou seja, atenção por posição;
+- **encontrar o máximo:** todas as posições olham para o maior dígito, ou seja, atenção por conteúdo;
+- ablação sem embeddings de posição: a atenção é invariante a permutações e não consegue inverter a sequência.
+
 ## Como executar
 
 Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`, e o quarto, os do `janeaustenr`:
@@ -69,6 +80,7 @@ Rscript estudo_um.R     # cerca de 1 minuto por causa do bootstrap
 Rscript estudo_dois.R   # cerca de 1 minuto
 Rscript estudo_tres.R   # menos de 1 minuto
 Rscript estudo_quatro.R # depende do SVD de uma matriz 3000 x 3000, de 1 a alguns minutos
+Rscript estudo_cinco.R  # três treinos de 2.000 passos, alguns minutos
 ```
 
 Cada script gera o seu gráfico principal em PNG na pasta atual.
