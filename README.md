@@ -1,6 +1,6 @@
 # Estudos em R
 
-Cinco estudos escritos em R base, sem bibliotecas de modelagem prontas.
+Os cinco primeiros estudos são escritos em R base, sem bibliotecas de modelagem prontas. A partir do sexto, a série entra em estatística espacial e machine learning geoespacial com dados públicos brasileiros, usando o ecossistema `sf` e `spdep`.
 
 ## 1. Inferência causal com os dados de LaLonde (`estudo_um.R`)
 
@@ -67,6 +67,30 @@ O mecanismo de self-attention do Transformer implementado só com multiplicaçã
 - **encontrar o máximo:** todas as posições olham para o maior dígito, ou seja, atenção por conteúdo;
 - ablação sem embeddings de posição: a atenção é invariante a permutações e não consegue inverter a sequência.
 
+## 6. Autocorrelação espacial de homicídios (`estudo_seis.R`)
+
+Homicídios por município na Bahia entre 2020 e 2022 (SIM/DATASUS, CID-10 X85 a Y09), com população e densidade do Censo 2022:
+
+- taxas por 100 mil habitantes com suavização bayesiana empírica, para não confundir ruído de municípios pequenos com padrão espacial;
+- vizinhança por contiguidade (queen) e pesos padronizados por linha;
+- Moran global com teste de permutação (999 simulações);
+- LISA para localizar hotspots (alto-alto), coldspots (baixo-baixo) e outliers espaciais;
+- regressão OLS diagnosticada com testes de Rao (LM) e comparada com os modelos SAR (defasagem espacial) e SEM (erro espacial), incluindo os impactos diretos e indiretos do SAR.
+
+Gera `homicidios_taxa.png` e `homicidios_lisa.png`.
+
+## 7. Regiões de vulnerabilidade social: k-means contra SKATER (`estudo_sete.R`)
+
+Seis indicadores do Atlas do Desenvolvimento Humano (Censo 2010) para os municípios da Bahia: analfabetismo, pobreza extrema, Gini, mortalidade infantil, água e esgoto inadequados e renda per capita:
+
+- indicadores orientados na mesma direção e padronizados por z-score;
+- escolha do número de grupos pelo cotovelo e pela silhueta;
+- k-means, que agrupa só por semelhança, contra SKATER, que corta a árvore geradora mínima do grafo de vizinhança e produz regiões contíguas;
+- tratamento de municípios-ilha (Itaparica e Vera Cruz), que deixariam o grafo desconexo;
+- comparação do trade-off: homogeneidade interna e silhueta contra número de fragmentos espaciais.
+
+Gera `vulnerabilidade_clusters.png`, com os dois mapas lado a lado.
+
 ## Como executar
 
 Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`, e o quarto, os do `janeaustenr`:
@@ -75,12 +99,16 @@ Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`, e o quarto,
 install.packages(c("causaldata", "janeaustenr"))
 ```
 
+Os estudos 6 e 7 instalam os próprios pacotes quando necessário (`sf`, `geobr`, `spdep`, `spatialreg`, `sidrar`, `abjData` e `microdatasus`, este último pelo GitHub) e precisam de internet para baixar malhas e dados do IBGE, DATASUS e Atlas Brasil.
+
 ```bash
 Rscript estudo_um.R     # cerca de 1 minuto por causa do bootstrap
 Rscript estudo_dois.R   # cerca de 1 minuto
 Rscript estudo_tres.R   # menos de 1 minuto
 Rscript estudo_quatro.R # depende do SVD de uma matriz 3000 x 3000, de 1 a alguns minutos
 Rscript estudo_cinco.R  # três treinos de 2.000 passos, alguns minutos
+Rscript estudo_seis.R   # o download do SIM pelo FTP do DATASUS domina o tempo
+Rscript estudo_sete.R   # menos de 1 minuto depois de instalados os pacotes
 ```
 
 Cada script gera o seu gráfico principal em PNG na pasta atual.
