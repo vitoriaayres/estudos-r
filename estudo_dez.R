@@ -62,10 +62,12 @@ shap <- shapviz(booster, X_pred = X_teste, X = X_teste)
 
 # Importância global (média do |SHAP|) e distribuição por variável
 sv_importance(shap, kind = "bar", max_display = 15)
-sv_importance(shap, kind = "beeswarm", max_display = 15)
+grafico_beeswarm <- sv_importance(shap, kind = "beeswarm", max_display = 15)
+ggsave("shap_importancia.png", grafico_beeswarm, width = 7, height = 5, dpi = 150)
 
 # Explicação de um caso individual
-sv_waterfall(shap, row_id = 1)
+grafico_waterfall <- sv_waterfall(shap, row_id = 1)
+ggsave("shap_waterfall.png", grafico_waterfall, width = 7, height = 5, dpi = 150)
 
 # Efeito de uma variável numérica
 sv_dependence(shap, v = "MonthlyIncome", color_var = "auto")
@@ -75,7 +77,7 @@ v <- vetiver_model(fluxo_ajustado, model_name = "modelo_attrition")
 v
 
 # Predição local, simulando o que a API faria
-predict(v$model, new_data = head(teste, 3), type = "prob")
+predict(bundle::unbundle(v$model), new_data = head(teste, 3), type = "prob")
 
 # Monta a API sem iniciá-la
 api <- pr() |> vetiver_api(v)
