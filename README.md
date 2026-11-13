@@ -1,6 +1,6 @@
 # Estudos em R
 
-Os cinco primeiros estudos são escritos em R base, sem bibliotecas de modelagem prontas. A partir do sexto, a série entra em estatística espacial e machine learning geoespacial com dados públicos brasileiros, usando o ecossistema `sf` e `spdep`.
+Os cinco primeiros estudos são escritos em R base, sem bibliotecas de modelagem prontas. A partir do sexto, a série entra em estatística espacial e machine learning geoespacial com dados públicos brasileiros, usando o ecossistema `sf` e `spdep`. Do oitavo ao décimo primeiro, a série passa para machine learning aplicado com `tidymodels`: regressão, classes raras, interpretabilidade e séries temporais.
 
 ## 1. Inferência causal com os dados de LaLonde (`estudo_um.R`)
 
@@ -91,6 +91,53 @@ Seis indicadores do Atlas do Desenvolvimento Humano (Censo 2010) para os municí
 
 Gera `vulnerabilidade_clusters.png`, com os dois mapas lado a lado.
 
+## 8. Preço de imóveis com tidymodels (`estudo_oito.R`)
+
+Previsão do preço de venda de imóveis de Ames (`modeldata::ames`), com o alvo em `log10` para estabilizar a variância dos preços:
+
+- divisão treino e teste estratificada pelo preço e validação cruzada de 10 folds apenas no treino;
+- receita única de pré-processamento (agrupamento de categorias raras, variáveis dummy, remoção de variância zero e normalização) compartilhada pelos dois modelos;
+- Lasso (`glmnet`) contra random forest (`ranger`), ambos com hiperparâmetros ajustados em `workflow_set`;
+- escolha do melhor modelo pelo RMSE da validação cruzada e avaliação única no conjunto de teste, para não vazar informação do teste na seleção;
+- gráfico de predito contra observado e importância das variáveis com `vip`.
+
+O RMSE está em `log10`: um erro de 0,08 equivale a cerca de 20% em reais (`10^0,08 ≈ 1,2`).
+
+## 9. Detecção de fraude com classe rara (`estudo_nove.R`)
+
+Transações simuladas com cerca de 2% de fraudes, em que a acurácia engana (dizer sempre "legítima" já acerta 98%). A prevalência é fixada ajustando o intercepto de uma regressão logística, e a fraude depende de uma interação entre compra no exterior e valor alto, que o modelo linear não captura sozinho:
+
+- comparação de duas receitas (sem e com SMOTE aplicado só dentro dos folds de treino) e dois modelos (regressão logística e XGBoost), totalizando quatro workflows;
+- seleção pela PR-AUC, cuja linha de base é a prevalência, em vez de acurácia ou ROC-AUC;
+- curva precisão-recall no conjunto de teste;
+- ajuste do limiar de decisão com `probably::threshold_perf`, porque SMOTE descalibra as probabilidades e o corte de 0,5 raramente é o ideal;
+- matriz de confusão no limiar com melhor F1.
+
+A escolha final do limiar é uma decisão de negócio: depende do custo de bloquear um cliente legítimo contra o de deixar passar uma fraude.
+
+## 10. Interpretabilidade com SHAP e modelo empacotado (`estudo_dez.R`)
+
+Previsão de saída de funcionários (`modeldata::attrition`) com XGBoost, explicada com valores de Shapley:
+
+- receita com variáveis ordinais convertidas em números e nominais em one-hot, para que o SHAP seja calculado por categoria;
+- ajuste de hiperparâmetros por validação cruzada e avaliação no teste com `last_fit`;
+- extração do booster nativo do workflow e SHAP com `shapviz`: importância global, beeswarm com a direção do efeito, waterfall de um caso individual e gráfico de dependência de `MonthlyIncome`;
+- empacotamento do workflow com `vetiver` e montagem da API com `plumber`, sem gravar nada em disco e sem iniciar o servidor.
+
+O booster modela a probabilidade do segundo nível do desfecho (`Yes`), então SHAP positivo empurra para maior risco de saída. SHAP explica o modelo, não a causa no mundo real. Com cerca de 1.470 linhas, o ROC-AUC varia bastante entre sementes.
+
+## 11. Previsão de demanda com séries temporais (`estudo_onze.R`)
+
+Aluguéis diários de bicicletas (`timetk::bike_sharing_daily`), com validação respeitando a ordem do tempo:
+
+- separação temporal, com os últimos 90 dias reservados para teste;
+- quatro modelos no mesmo `modeltime_table`: baseline ingênuo (naive), ARIMA automático, Prophet e XGBoost com features de calendário (assinatura temporal e termos de Fourier);
+- comparação por RMSE, MAE e MASE, em que MASE abaixo de 1 indica melhora sobre o naive;
+- validação por janela deslizante (5 janelas de 60 dias) com média e desvio padrão por modelo, mais robusta que um único teste;
+- reajuste com todos os dados e previsão dos próximos 60 dias.
+
+Árvores não extrapolam tendência, então o XGBoost tende a sofrer com séries em crescimento. Uma alternativa é modelar a tendência com ARIMA e os resíduos com XGBoost.
+
 ## Como executar
 
 Requer R 4.x. O primeiro estudo usa os dados do pacote `causaldata`, e o quarto, os do `janeaustenr`:
@@ -101,6 +148,8 @@ install.packages(c("causaldata", "janeaustenr"))
 
 Os estudos 6 e 7 instalam os próprios pacotes quando necessário (`sf`, `geobr`, `spdep`, `spatialreg`, `sidrar`, `abjData` e `microdatasus`, este último pelo GitHub) e precisam de internet para baixar malhas e dados do IBGE, DATASUS e Atlas Brasil.
 
+Os estudos 8 a 11 também instalam os próprios pacotes no início (`tidymodels`, `themis`, `xgboost`, `shapviz`, `vetiver`, `modeltime`, `timetk` e `prophet`, entre outros). Todos os dados vêm de pacotes ou são simulados, então não precisam de internet além da instalação. No Windows, o `prophet` às vezes falha por depender do `rstan`; nesse caso, remova o `mod_prophet` do estudo 11.
+
 ```bash
 Rscript estudo_um.R     # cerca de 1 minuto por causa do bootstrap
 Rscript estudo_dois.R   # cerca de 1 minuto
@@ -109,6 +158,10 @@ Rscript estudo_quatro.R # depende do SVD de uma matriz 3000 x 3000, de 1 a algun
 Rscript estudo_cinco.R  # três treinos de 2.000 passos, alguns minutos
 Rscript estudo_seis.R   # o download do SIM pelo FTP do DATASUS domina o tempo
 Rscript estudo_sete.R   # menos de 1 minuto depois de instalados os pacotes
+Rscript estudo_oito.R   # ajuste de dois modelos com validação cruzada, alguns minutos
+Rscript estudo_nove.R   # quatro workflows com SMOTE e XGBoost, alguns minutos
+Rscript estudo_dez.R    # ajuste do XGBoost e cálculo do SHAP, alguns minutos
+Rscript estudo_onze.R   # o auto_arima nas 5 janelas domina o tempo
 ```
 
-Cada script gera o seu gráfico principal em PNG na pasta atual.
+Os estudos 1 a 7 geram o seu gráfico principal em PNG na pasta atual. Os estudos 8 a 11 mostram os gráficos na sessão e imprimem as métricas no console, então convém rodá-los linha a linha no RStudio.
