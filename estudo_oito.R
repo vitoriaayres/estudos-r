@@ -1,10 +1,9 @@
 # Estudo 8: preço de imóveis com tidymodels (Lasso contra random forest)
 
 # 1. Pacotes
-install.packages(c("tidymodels", "modeldata", "glmnet", "ranger", "vip"))
+install.packages(c("tidymodels", "modeldata", "glmnet", "ranger"))
 
 library(tidymodels)
-library(vip)
 tidymodels_prefer()
 set.seed(123)
 
@@ -69,14 +68,30 @@ ajuste_final <- resultados |>
 collect_metrics(ajuste_final)
 
 # 8. Predito vs. observado
-collect_predictions(ajuste_final) |>
+grafico_predito <- collect_predictions(ajuste_final) |>
   ggplot(aes(x = Sale_Price, y = .pred)) +
   geom_abline(lty = 2, color = "gray50") +
   geom_point(alpha = 0.4) +
   coord_obs_pred() +
   labs(x = "Observado (log10)", y = "Predito (log10)")
 
-# 9. Importância das variáveis
-ajuste_final |>
-  extract_fit_parsnip() |>
-  vip(num_features = 15)
+ggsave("imoveis_predito_observado.png", grafico_predito, width = 6, height = 5, dpi = 150)
+
+# 9. Importância das variáveis, direto do motor (o pacote vip saiu do CRAN)
+motor <- extract_fit_engine(ajuste_final)
+
+valores <- if (inherits(motor, "ranger")) {
+  motor$variable.importance                                   # importância por permutação
+} else {
+  coeficientes <- as.matrix(coef(motor, s = melhores_params$penalty))
+  coeficientes[rownames(coeficientes) != "(Intercept)", 1]    # coeficientes do Lasso (preditores normalizados)
+}
+
+importancia <- tibble(variavel = names(valores), valor = abs(valores)) |>
+  slice_max(valor, n = 15)
+
+grafico_importancia <- ggplot(importancia, aes(x = valor, y = reorder(variavel, valor))) +
+  geom_col() +
+  labs(x = "Importância (valor absoluto)", y = NULL)
+
+ggsave("imoveis_importancia.png", grafico_importancia, width = 6, height = 5, dpi = 150)
