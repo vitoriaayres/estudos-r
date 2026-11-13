@@ -101,9 +101,11 @@ collect_metrics(ajuste_final)
 
 previsoes <- collect_predictions(ajuste_final)
 
-previsoes |>
+grafico_pr <- previsoes |>
   pr_curve(truth = classe, .pred_fraude) |>
   autoplot()
+
+ggsave("fraude_curva_pr.png", grafico_pr, width = 6, height = 5, dpi = 150)
 
 # 8. Ajuste do limiar de decisão (o padrão de 0.5 raramente é o ideal)
 limiares <- previsoes |>
@@ -114,10 +116,12 @@ limiares <- previsoes |>
     metrics    = metric_set(precision, recall, f_meas)
   )
 
-limiares |>
+grafico_limiares <- limiares |>
   ggplot(aes(x = .threshold, y = .estimate, color = .metric)) +
   geom_line() +
   labs(x = "Limiar", y = "Valor", color = "Métrica")
+
+ggsave("fraude_limiares.png", grafico_limiares, width = 6, height = 4, dpi = 150)
 
 # 9. Matriz de confusão no limiar com melhor F1
 melhor_limiar <- limiares |>
