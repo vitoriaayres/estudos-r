@@ -1,11 +1,12 @@
 # Estudo 11: previsão de demanda com séries temporais (naive, ARIMA, Prophet e XGBoost)
 
 # 1. Pacotes
-install.packages(c("tidymodels", "tidyverse", "modeltime", "timetk", "prophet", "xgboost"))
+install.packages(c("tidymodels", "tidyverse", "modeltime", "modeltime.resample", "timetk", "prophet", "xgboost"))
 
 library(tidymodels)
 library(tidyverse)
 library(modeltime)
+library(modeltime.resample)
 library(timetk)
 tidymodels_prefer()
 set.seed(7)
@@ -63,9 +64,11 @@ calibrado <- tabela |> modeltime_calibrate(new_data = teste)
 
 calibrado |> modeltime_accuracy()
 
-calibrado |>
+grafico_teste <- calibrado |>
   modeltime_forecast(new_data = teste, actual_data = dados) |>
   plot_modeltime_forecast(.interactive = FALSE)
+
+ggsave("series_previsao_teste.png", grafico_teste, width = 9, height = 5, dpi = 150)
 
 # 6. Validação por janela deslizante (5 janelas de 60 dias)
 janelas <- time_series_cv(
