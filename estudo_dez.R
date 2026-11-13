@@ -58,6 +58,10 @@ receita_prep   <- extract_recipe(fluxo_ajustado)
 
 X_teste <- bake(receita_prep, new_data = teste, all_predictors(), composition = "matrix")
 
+# Atenção: o parsnip trata o primeiro nível do desfecho ("No") como evento, então o
+# booster modela a probabilidade de PERMANECER. SHAP positivo favorece a permanência
+# e SHAP negativo favorece a saída (o valor-base do waterfall, +1,71 de log-odds, é a
+# taxa de permanência).
 shap <- shapviz(booster, X_pred = X_teste, X = X_teste)
 
 # Importância global (média do |SHAP|) e distribuição por variável
